@@ -41,6 +41,17 @@ PEP8 соблюдать строго.
 import datetime
 
 
+class DeadlineError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+        print("You are late")
+
+
+class Person:
+    first_name = ""
+    last_name = ""
+
+
 class Homework:
     def __init__(
         self,
@@ -57,24 +68,48 @@ class Homework:
         return (self.created.day + self.deadline) > datetime.datetime.now().day
 
 
-class Student:
+class Student(Person):
     def __init__(self, last_name: str, first_name: str) -> None:
         self.last_name = last_name
         self.first_name = first_name
 
     def do_homework(self, homework: Homework):
         if not homework.is_active():
-            print("You are late")
-        return homework
+            raise DeadlineError("You are late") from None
+        return HomeworkResult(homework, self, homework.text)
 
 
-class Teacher:
+class HomeworkResult:
+    def __init__(self, homework, author: Student, solution: str) -> None:
+        if not isinstance(homework, Homework):
+            raise TypeError("You gave a not Homework object")
+        self.homework = homework
+        self.solution = solution
+        self.author = author
+        self.created = datetime.datetime.now()
+
+
+class Teacher(Person):
+    homework_done = dict()
+
     def __init__(self, last_name: str, first_name: str) -> None:
         self.first_name = first_name
         self.last_name = last_name
 
     def create_homework(self, text: str, days: datetime.timedelta.days):
         return Homework(text, days)
+
+    def check_homework(self, result: HomeworkResult):
+        if len(result.solution) > 5:
+            self.homework_done.update({result.homework: result})
+            return True
+        return False
+
+    def reset_result(self, homework: Homework):
+        if homework:
+            self.homework_done.pop(homework)
+        else:
+            self.homework_done.clear()
 
 
 if __name__ == "__main__":
